@@ -46,7 +46,6 @@ header("HTTP/1.1 200 OK");
     <meta property="og:image" content="<?php echo $gif_url; ?>">
     <meta property="og:type" content="website">
     <meta property="og:url" content="<?php echo 'http://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']; ?>">
-    <link rel="alternate" type="application/json+oembed" href="<?php echo 'http://' . $_SERVER['HTTP_HOST'] . '/oembed.json.php?url=' . urlencode($gif_url); ?>" title="Random GIF">
     <title>Random GIF</title>
 </head>
 <body>

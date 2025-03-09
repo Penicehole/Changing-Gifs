@@ -17,19 +17,39 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error . " (" . $conn->connect_errno . ")");
 }
 
-// Fetch a random GIF URL from the database
-$sql = "SELECT url FROM gifs ORDER BY RAND() LIMIT 1";
-$result = $conn->query($sql);
+$max_attempts = 5;
+$attempts = 0;
+$gif_url = null;
 
-if ($result === false) {
-    die("Error executing query: " . $conn->error);
+while ($attempts < $max_attempts) {
+    // Fetch a random GIF URL from the database
+    $sql = "SELECT url FROM gifs ORDER BY RAND() LIMIT 1";
+    $result = $conn->query($sql);
+
+    if ($result === false) {
+        die("Error executing query: " . $conn->error);
+    }
+
+    if ($result->num_rows > 0) {
+        // Output data of each row
+        $row = $result->fetch_assoc();
+        $gif_url = $row["url"];
+        
+        // Check if the URL is valid and accessible
+        $headers = get_headers($gif_url, 1);
+        if ($headers !== false) {
+            $http_status = $headers[0];
+            if (strpos($http_status, '200') !== false) {
+                break;
+            }
+        }
+    }
+
+    $attempts++;
 }
 
-if ($result->num_rows > 0) {
-    $row = $result->fetch_assoc();
-    $gif_url = $row["url"];
-} else {
-    die("Error: No GIFs found in the database.");
+if ($gif_url === null || $attempts == $max_attempts) {
+    die("Error: No accessible GIF URLs found.");
 }
 
 // Serve the HTML with Open Graph meta tags
@@ -46,7 +66,6 @@ header("HTTP/1.1 200 OK");
     <meta property="og:image" content="<?php echo $gif_url; ?>">
     <meta property="og:type" content="website">
     <meta property="og:url" content="<?php echo 'http://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']; ?>">
-    <link rel="alternate" type="application/json+oembed" href="<?php echo 'http://' . $_SERVER['HTTP_HOST'] . '/oembed.json.php?url=' . urlencode($gif_url); ?>" title="Random GIF">
     <title>Random GIF</title>
 </head>
 <body>
